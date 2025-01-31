@@ -1,4 +1,4 @@
-# KaizenLingo - AI-Powered Japanese Learning Platform
+# KaizenLingo - AI-Powered Language Learning Platform
 
 An intelligent language learning platform combining structured curriculum with AI-powered tutoring using GPT-4o.
 
