@@ -1,0 +1,136 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String        @id @default(cuid())
+  email            String        @unique
+  password         String
+  name             String?
+  nativeLanguage   String
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  studyLists       StudyList[]
+  learningLanguages UserLanguage[]
+  lessons       Lesson[] //lessons created by user
+  progress      Progress[]
+  vocabulary      Vocabulary[]
+}
+
+model Language {
+  id            String        @id @default(cuid())
+  code          String       @unique
+  name          String
+  users         UserLanguage[]
+  lessons       Lesson[]
+  studyLists    StudyList[]
+}
+
+model UserLanguage {
+  id          String    @id @default(cuid())
+  userId      String
+  languageId  String
+  level       String    @default("BEGINNER")
+  startedAt   DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id])
+  language    Language  @relation(fields: [languageId], references: [id])
+
+  @@unique([userId, languageId])
+}
+
+model Lesson {
+  id            String    @id @default(cuid())
+  title         String
+  content       String    @db.Text
+  level         String
+  topic         String?
+  description   String?
+  quiz          Json?     // Stores quiz questions and answers
+  isAiGenerated Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  userId        String?   // Creator or generator of the lesson
+  user          User?     @relation(fields: [userId], references: [id])
+  progress      Progress[]
+  category      String?   // For organizing lessons (e.g., "Grammar", "Vocabulary", etc.)
+  tags          String[]  // For easier searching and filtering
+  order         Int?      // For structured curriculum ordering
+  languageId    String   // Foreign key to Language
+  language      Language @relation(fields: [languageId], references: [id]) // Define the relation
+}
+
+model Progress {
+  id            String    @id @default(cuid())
+  userId        String
+  lessonId      String
+  completed     Boolean   @default(false)
+  score         Int?
+  lastAttempted DateTime  @default(now())
+  completedAt   DateTime?
+  attempts      Int       @default(0)
+  user          User      @relation(fields: [userId], references: [id])
+  lesson        Lesson    @relation(fields: [lessonId], references: [id])
+
+  @@unique([userId, lessonId])
+  @@index([completed])
+}
+
+model StudyList {
+  id          String      @id @default(cuid())
+  title       String
+  userId      String
+  languageId  String
+  items       StudyItem[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  user        User        @relation(fields: [userId], references: [id])
+  language    Language    @relation(fields: [languageId], references: [id])
+}
+
+model StudyItem {
+  id          String    @id @default(cuid())
+  term        String
+  definition  String
+  notes       String?
+  studyListId String
+  studyList   StudyList @relation(fields: [studyListId], references: [id])
+}
+
+model Vocabulary {
+  id              String    @id @default(cuid())
+  word            String
+  reading         String
+  meaning         String[]  // Array of meanings
+  jlptLevel      String?   // N5, N4, N3, N2, N1
+  partOfSpeech   String    // noun, verb, adjective, etc.
+  examples       Example[]
+  notes          String?
+  commonness     Int?      // 1-5 scale of how common the word is
+  tags           String[]
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  userId         String?   // If user adds custom vocabulary
+  user           User?     @relation(fields: [userId], references: [id])
+}
+
+model Example {
+  id            String     @id @default(cuid())
+  japanese      String
+  reading       String
+  english       String
+  vocabularyId  String
+  vocabulary    Vocabulary @relation(fields: [vocabularyId], references: [id])
+}
